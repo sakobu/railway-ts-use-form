@@ -1,9 +1,14 @@
+import { toStandardSchema } from '@railway-ts/pipelines/schema';
 import { useForm } from '../src/';
-import { asyncUserSchema, type AsyncUser } from './asyncUserSchema';
+import { userSchema, type User } from './userSchema';
 import { prepareForAPI } from './utils';
 
-export default function AsyncUserForm() {
-  const form = useForm<AsyncUser>(asyncUserSchema, {
+// Convert the railway-ts pipeline validator into a Standard Schema v1 object,
+// then pass it straight to useForm — demonstrating full round-trip interop.
+const standardUserSchema = toStandardSchema(userSchema);
+
+export default function StandardSchemaForm() {
+  const form = useForm<User>(standardUserSchema, {
     initialValues: {
       username: '',
       email: '',
@@ -16,23 +21,22 @@ export default function AsyncUserForm() {
     },
     onSubmit: (values) => {
       const apiPayload = prepareForAPI(values);
-      console.log('Submit:', apiPayload);
+      console.log('Submit (Standard Schema):', apiPayload);
     },
   });
 
   return (
     <form onSubmit={(e) => void form.handleSubmit(e)}>
-      <h2>Async User Registration</h2>
+      <h2>Standard Schema Registration</h2>
 
-      {/* Text Input - Username (with async validation) */}
+      {/* Text Input - Username */}
       <div className="field">
         <label htmlFor={form.getFieldProps('username').id}>Username *</label>
         <input
           type="text"
-          placeholder="Enter username (try 'admin' or 'taken')"
+          placeholder="Enter username"
           {...form.getFieldProps('username')}
         />
-        {form.isValidating && <span className="validating">Checking...</span>}
         {form.touched.username && form.errors.username && (
           <span className="error">{form.errors.username}</span>
         )}
@@ -95,80 +99,6 @@ export default function AsyncUserForm() {
         )}
       </div>
 
-      {/* Nested Object - Address */}
-      <fieldset>
-        <legend>Address (Optional)</legend>
-
-        <div className="field">
-          <label htmlFor={form.getFieldProps('address.street').id}>
-            Street
-          </label>
-          <input
-            type="text"
-            placeholder="123 Main St"
-            {...form.getFieldProps('address.street')}
-          />
-          {form.touched['address.street'] && form.errors['address.street'] && (
-            <span className="error">{form.errors['address.street']}</span>
-          )}
-        </div>
-
-        <div className="field">
-          <label htmlFor={form.getFieldProps('address.city').id}>City</label>
-          <input
-            type="text"
-            placeholder="New York"
-            {...form.getFieldProps('address.city')}
-          />
-          {form.touched['address.city'] && form.errors['address.city'] && (
-            <span className="error">{form.errors['address.city']}</span>
-          )}
-        </div>
-
-        <div className="field">
-          <label htmlFor={form.getFieldProps('address.zipCode').id}>
-            ZIP Code
-          </label>
-          <input
-            type="text"
-            placeholder="12345"
-            {...form.getFieldProps('address.zipCode')}
-          />
-          {form.touched['address.zipCode'] &&
-            form.errors['address.zipCode'] && (
-              <span className="error">{form.errors['address.zipCode']}</span>
-            )}
-        </div>
-      </fieldset>
-
-      {/* Array Field - Contact Methods (checkbox group) */}
-      <fieldset>
-        <legend>Contact Methods (Optional)</legend>
-        <div className="field">
-          <label
-            htmlFor={form.getCheckboxGroupOptionProps('contacts', 'email').id}
-          >
-            <input
-              type="checkbox"
-              {...form.getCheckboxGroupOptionProps('contacts', 'email')}
-            />
-            Email
-          </label>
-          <label
-            htmlFor={form.getCheckboxGroupOptionProps('contacts', 'phone').id}
-          >
-            <input
-              type="checkbox"
-              {...form.getCheckboxGroupOptionProps('contacts', 'phone')}
-            />
-            Phone
-          </label>
-          {form.touched.contacts && form.errors.contacts && (
-            <span className="error">{form.errors.contacts}</span>
-          )}
-        </div>
-      </fieldset>
-
       {/* Checkbox - Terms Acceptance */}
       <div className="field">
         <label>
@@ -185,10 +115,7 @@ export default function AsyncUserForm() {
 
       {/* Form Actions */}
       <div className="actions">
-        <button
-          type="submit"
-          disabled={form.isSubmitting || form.isValidating || !form.isValid}
-        >
+        <button type="submit" disabled={form.isSubmitting || !form.isValid}>
           {form.isSubmitting ? 'Submitting...' : 'Register'}
         </button>
 
@@ -202,15 +129,7 @@ export default function AsyncUserForm() {
       </div>
 
       <pre>
-        {JSON.stringify(
-          {
-            values: form.values,
-            errors: form.errors,
-            isValidating: form.isValidating,
-          },
-          null,
-          2
-        )}
+        {JSON.stringify({ values: form.values, errors: form.errors }, null, 2)}
       </pre>
     </form>
   );
